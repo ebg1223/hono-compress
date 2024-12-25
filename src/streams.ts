@@ -2,7 +2,7 @@ import zstd from '@mongodb-js/zstd'
 
 import type { NodeCompressionEncoding, NodeCompressionOptions } from '~/types'
 
-import { brotli, zlib } from '~/imports'
+import { zlib } from '~/imports'
 
 export class ZstdCompressionStream extends TransformStream {
   constructor(level?: number) {
@@ -14,17 +14,17 @@ export class ZstdCompressionStream extends TransformStream {
   }
 }
 
-export class BrotliCompressionStream extends TransformStream {
-  constructor(level?: number) {
-    const compressStream = new brotli.CompressStream(level)
+// export class BrotliCompressionStream extends TransformStream {
+//   constructor(level?: number) {
+//     const compressStream = new brotli.CompressStream(level)
 
-    super({
-      transform(chunk, controller) {
-        controller.enqueue(compressStream.compress(chunk, chunk.length).buf)
-      },
-    })
-  }
-}
+//     super({
+//       transform(chunk, controller) {
+//         controller.enqueue(compressStream.compress(chunk, chunk.length).buf)
+//       },
+//     })
+//   }
+// }
 
 export class ZlibCompressionStream {
   readable: ReadableStream

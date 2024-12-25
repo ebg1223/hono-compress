@@ -16,11 +16,7 @@ import {
   shouldTransform,
 } from '~/helpers'
 import { zlib } from '~/imports'
-import {
-  BrotliCompressionStream,
-  ZlibCompressionStream,
-  ZstdCompressionStream,
-} from '~/streams'
+import { ZlibCompressionStream, ZstdCompressionStream } from '~/streams'
 
 function checkCompressEncodings(encodings: CompressionEncoding[]) {
   const unsupportedEncoding: string | undefined = encodings.find(
@@ -92,6 +88,13 @@ function findAcceptedEncoding(c: Context, encodings: CompressionEncoding[]) {
   return encodings.find((enc) => acceptedEncoding.includes(enc))
 }
 
+function findBackupEncoding(c: Context, encodings: CompressionEncoding[]) {
+  return findAcceptedEncoding(
+    c,
+    encodings.filter((enc) => enc === 'gzip' || enc === 'deflate'),
+  ) as 'deflate' | 'gzip' | undefined
+}
+
 export function compress({
   encoding,
   encodings = [...ACCEPTED_ENCODINGS],
@@ -137,11 +140,15 @@ export function compress({
     } else if (zlib) {
       const level = enc === 'br' ? brotliLevel : gzipLevel
       stream = new ZlibCompressionStream(enc, { level, ...options })
-    } else if (enc === 'br') {
-      stream = new BrotliCompressionStream(brotliLevel)
-    } else {
-      stream = new CompressionStream(enc)
+    } else if (CompressionStream) {
+      const backupEncoding = findBackupEncoding(c, encodings)
+      if (!backupEncoding) {
+        return
+      }
+      stream = new CompressionStream(backupEncoding)
     }
+
+    if (!stream) return
 
     c.res = new Response(c.res.body!.pipeThrough(stream), c.res)
 
